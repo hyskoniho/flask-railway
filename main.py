@@ -24,7 +24,17 @@ def server_address():
         return jsonify({"server_address": request.host_url, "external_ip": None, "error": str(exc)}), 502
 
     return jsonify({"server_address": request.host_url, "external_ip": external_ip})
-    return jsonify({"server_address": request.host_url})
+
+@app.route('clob_test', methods=['GET'])
+def clob_test():
+    try:
+        r = requests.get("https://clob.polymarket.com", timeout=5)
+        r.raise_for_status()
+        
+    except Exception:
+        return {"error": "CLOB API unreachable"}
+            
+    return jsonify({"request": "successful", "status_code": r.status_code, "text": r.text})
 
 @app.route('/clob_order', methods=['POST'])
 def clob_order():
