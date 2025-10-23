@@ -1,6 +1,6 @@
 from py_clob_client.client import ClobClient
 from py_clob_client.clob_types import OrderArgs, OrderType
-from py_clob_client.order_builder.constants import BUY
+from py_clob_client.order_builder.constants import BUY, SELL
 
 def create_and_post_order(
     private_key: str,
@@ -69,3 +69,20 @@ def create_and_post_order(
         response = {"error": "CLOB ERROR!", "details": str(e)}
 
     return response
+
+if __name__ == "__main__":
+    import os
+    from dotenv import load_dotenv
+    
+    load_dotenv(override=True)
+    
+    # Example usage
+    resp = create_and_post_order(
+        private_key=os.getenv("PRIVATE_KEY"),
+        proxy_address=os.getenv("PROXY_ADDRESS"),
+        token_id="35819574986567063041610481895803311952212566085229880109455177860039836195470",
+        price=0.977,
+        size=1,
+        side="BUY"
+    )
+    print(resp)
