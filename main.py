@@ -25,10 +25,10 @@ def server_address():
 
     return jsonify({"server_address": request.host_url, "external_ip": external_ip})
 
-@app.route('clob_test', methods=['GET'])
+@app.route('/clob_test', methods=['GET'])
 def clob_test():
     try:
-        r = requests.get("https://clob.polymarket.com", timeout=5)
+        r = requests.get(r"https://clob.polymarket.com")
         r.raise_for_status()
         
     except Exception:
