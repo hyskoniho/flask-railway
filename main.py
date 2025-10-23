@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 from library import clob
-import os
+import os, requests
 
 app = Flask(__name__)
 
@@ -8,6 +8,23 @@ app = Flask(__name__)
 @app.route('/foo')
 def index():
     return jsonify({"Choo Choo": "Welcome to your Flask app 🚅"})
+
+@app.route('/server_address')
+def server_address():
+    try:
+        try:
+            r = requests.get("https://api.ipify.org?format=json", timeout=5)
+            r.raise_for_status()
+            external_ip = r.json().get("ip")
+        except Exception:
+            r = requests.get("https://checkip.amazonaws.com/", timeout=5)
+            r.raise_for_status()
+            external_ip = r.text.strip()
+    except Exception as exc:
+        return jsonify({"server_address": request.host_url, "external_ip": None, "error": str(exc)}), 502
+
+    return jsonify({"server_address": request.host_url, "external_ip": external_ip})
+    return jsonify({"server_address": request.host_url})
 
 @app.route('/clob_order', methods=['POST'])
 def clob_order():

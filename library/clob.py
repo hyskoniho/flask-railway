@@ -1,6 +1,7 @@
 from py_clob_client.client import ClobClient
 from py_clob_client.clob_types import OrderArgs, OrderType
 from py_clob_client.order_builder.constants import BUY, SELL
+from py_clob_client.constants import POLYGON
 
 def create_and_post_order(
     private_key: str,
@@ -42,13 +43,14 @@ def create_and_post_order(
         client = ClobClient(
             host="https://clob.polymarket.com",
             key=private_key,
-            chain_id=137,
+            chain_id=POLYGON,
             signature_type=1,
             funder=proxy_address
         )
 
         # Ensure API credentials are set or derived
-        client.set_api_creds(client.create_or_derive_api_creds())
+        creds = client.create_or_derive_api_creds()
+        client.set_api_creds(creds=creds)
 
         # Build order
         order_args = OrderArgs(
@@ -82,7 +84,7 @@ if __name__ == "__main__":
         proxy_address=os.getenv("PROXY_ADDRESS"),
         token_id="35819574986567063041610481895803311952212566085229880109455177860039836195470",
         price=0.977,
-        size=1,
+        size=2,
         side="BUY"
     )
     print(resp)
