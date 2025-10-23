@@ -68,7 +68,7 @@ def create_and_post_order(
 
     except Exception as e:
         # Return a structured error to make debugging easier for the caller
-        response = {"error": "CLOB ERROR!", "details": str(e)}
+        response = {"error": "CLOB ERROR!", "order": str(signed_order), "details": str(e)}
 
     return response
 
