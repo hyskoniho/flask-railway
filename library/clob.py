@@ -1,7 +1,21 @@
-from py_clob_client.client import ClobClient
 from py_clob_client.clob_types import OrderArgs, OrderType
 from py_clob_client.order_builder.constants import BUY, SELL
 from py_clob_client.constants import POLYGON
+import py_clob_client.client as client_module
+
+original_post = client_module.post
+
+def sniffing_post(url, headers=None, data=None, *args, **kwargs):
+    print("=== Sniffed post call ===")
+    print("URL:", url)
+    print("Headers:", headers)
+    print("Body:", data)
+    print("=========================")
+    return original_post(url, headers=headers, data=data, *args, **kwargs)
+
+client_module.post = sniffing_post
+
+from py_clob_client.client import ClobClient
 
 def create_and_post_order(
     private_key: str,
