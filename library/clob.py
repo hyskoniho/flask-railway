@@ -10,9 +10,37 @@ def create_and_post_order(
     size: float,
     side: str
 ):
+    # Basic input validation and sanitization
     try:
+        if private_key is None or proxy_address is None:
+            return {"error": "Missing required field", "missing": [k for k,v in {"private_key":private_key, "proxy_address":proxy_address}.items() if v is None]}
+
+        # Normalize strings and strip common prefixes like 0x
+        private_key = str(private_key).strip()
+        proxy_address = str(proxy_address).strip()
+        token_id = None if token_id is None else str(token_id).strip()
+
+        if private_key.startswith(('0x', '0X')):
+            private_key = private_key[2:]
+        if proxy_address.startswith(('0x', '0X')):
+            proxy_address = proxy_address[2:]
+
+        # Quick hex validation for private key to catch the typical '0x' mistake
+        try:
+            bytes.fromhex(private_key)
+        except Exception as e:
+            return {"error": "Invalid private_key hex", "details": str(e)}
+
+        # Ensure numeric fields are proper types
+        try:
+            price = float(price)
+            size = float(size)
+        except Exception as e:
+            return {"error": "Invalid numeric value for price/size", "details": str(e)}
+
+        # Build client and submit order
         client = ClobClient(
-            "https://clob.polymarket.com",
+            host="https://clob.polymarket.com",
             key=private_key,
             chain_id=137,
             signature_type=1,
@@ -35,8 +63,9 @@ def create_and_post_order(
 
         # Send the signed order to the order endpoint as GTC
         response = client.post_order(signed_order, OrderType.GTC)
-        
+
     except Exception as e:
-        response = {"error": "CLOB ERROR!\n" + str(e)}
+        # Return a structured error to make debugging easier for the caller
+        response = {"error": "CLOB ERROR!", "details": str(e)}
 
     return response
