@@ -18,7 +18,8 @@ def mocked_request(endpoint: str, method: str, headers=None, data=None):
         print("Using mocked request!")
         
         headers = helpers_module.overloadHeaders(method, headers)
-
+        headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+        
         # Inject proxies into requests.request call inside original function logic
         resp = requests.request(
             method=method,
