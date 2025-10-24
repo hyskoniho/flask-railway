@@ -1,8 +1,52 @@
+
+import py_clob_client.http_helpers.helpers as helpers_module
+import requests, os
+
+# Save original function
+original_request = helpers_module.request
+
+# Proxy configuration: replace with your residential proxy URL
+proxy_url = os.environ.get("RESIDENTIAL_PROXY", "")
+proxies = {
+    "http": proxy_url,
+    "https": proxy_url,
+}
+
+def mocked_request(endpoint: str, method: str, headers=None, data=None):
+    try:
+        # Add original headers processing if needed
+        print("Using mocked request!")
+        
+        headers = helpers_module.overloadHeaders(method, headers)
+
+        # Inject proxies into requests.request call inside original function logic
+        resp = requests.request(
+            method=method,
+            url=endpoint,
+            headers=headers,
+            json=data if data else None,
+            proxies=proxies,        # Inject proxy here
+        )
+        if resp.status_code != 200:
+            raise helpers_module.PolyApiException(resp)
+
+        try:
+            return resp.json()
+        except requests.JSONDecodeError:
+            return resp.text
+
+    except requests.RequestException:
+        raise helpers_module.PolyApiException(error_msg="Request exception!")
+
+# Patch the function in the module
+helpers_module.request = mocked_request
+
 from py_clob_client.clob_types import OrderArgs, OrderType
 from py_clob_client.order_builder.constants import BUY, SELL
 from py_clob_client.constants import POLYGON
-import py_clob_client.client as client_module
 import requests
+
+import py_clob_client.client as client_module
 
 original_post = client_module.post
 
@@ -110,7 +154,7 @@ if __name__ == "__main__":
         proxy_address=os.getenv("PROXY_ADDRESS"),
         token_id="35819574986567063041610481895803311952212566085229880109455177860039836195470",
         price=0.977,
-        size=2,
+        size=1,
         side="BUY"
     )
     print(resp)
