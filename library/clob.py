@@ -145,7 +145,6 @@ def create_and_post_order(
     return response
 
 if __name__ == "__main__":
-    import os
     from dotenv import load_dotenv
     
     load_dotenv(override=True)
