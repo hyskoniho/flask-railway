@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request
-from library import clob, psoffice
+from library import clob, psoffice, moodle
 import os, requests
 
 app = Flask(__name__)
@@ -96,6 +96,25 @@ def psoffice_week():
         return jsonify({"error": "Failed to retrieve week data", "details": str(e)}), 500
 
     return jsonify({"week_data": week_data})
+
+@app.route('/moodle_session', methods=['GET'])
+def moodle_session():
+    username = request.args.get('username')
+    password = request.args.get('password')
+
+    if not username or not password:
+        return jsonify({"error": "Missing 'username' or 'password' query parameters"}), 400
+
+    try:
+        cookies, sesskey, id = moodle.buildSession(username, password)
+    except Exception as e:
+        return jsonify({"error": "Failed to build Moodle session", "details": str(e)}), 500
+
+    return jsonify({
+        "cookies": cookies,
+        "sesskey": sesskey,
+        "id": id
+    })
 
 if __name__ == '__main__':
     app.run(debug=True, port=os.getenv("PORT", default=5000))
