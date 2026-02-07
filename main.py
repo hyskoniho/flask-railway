@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from library import clob, psoffice, moodle
 import os, requests
 
@@ -115,6 +115,10 @@ def moodle_session():
         "sesskey": sesskey,
         "id": id
     })
+
+@app.route('/aquatic', methods=['GET'])
+def aquatic():
+    return render_template('aquatic.html')
 
 if __name__ == '__main__':
     app.run(debug=True, port=os.getenv("PORT", default=5000))
