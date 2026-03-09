@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request, render_template
 from library import clob, psoffice, moodle, habitica
-import os, requests
+import os, requests, sys, traceback
 
 app = Flask(__name__)
 
@@ -137,7 +137,6 @@ def habitica_sync():
         for item in obsidian:
             _ = {**_, **item}
         obsidian = _
-    
 
     if obsidian is None or habitica_tasks is None:
         return jsonify({"error": "Missing 'obsidian' or 'habitica' fields"}), 400
@@ -145,7 +144,7 @@ def habitica_sync():
     try:
         result = habitica.sync_tasks(obsidian, habitica_tasks)
     except Exception as e:
-        return jsonify({"error": "Failed to sync tasks", "details": str(e)}), 500
+        return jsonify({"error": "Failed to sync tasks", "details": ''.join(traceback.format_exception(*sys.exc_info())) + '\n' + str(e)}), 500
 
     return jsonify(result)
 
