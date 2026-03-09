@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request, render_template
-from library import clob, psoffice, moodle
+from library import clob, psoffice, moodle, habitica
 import os, requests
 
 app = Flask(__name__)
@@ -119,6 +119,28 @@ def moodle_session():
 @app.route('/aquatic', methods=['GET'])
 def aquatic():
     return render_template('aquatic.html')
+
+@app.route('/habitica_sync', methods=['POST'])
+def habitica_sync():
+    if not request.is_json:
+        return jsonify({"error": "Request must be application/json"}), 400
+
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "Invalid or missing JSON body"}), 400
+
+    obsidian = data.get("obsidian")
+    habitica_tasks = data.get("habitica")
+
+    if obsidian is None or habitica_tasks is None:
+        return jsonify({"error": "Missing 'obsidian' or 'habitica' fields"}), 400
+
+    try:
+        result = habitica.sync_tasks(obsidian, habitica_tasks)
+    except Exception as e:
+        return jsonify({"error": "Failed to sync tasks", "details": str(e)}), 500
+
+    return jsonify(result)
 
 if __name__ == '__main__':
     app.run(debug=True, port=os.getenv("PORT", default=5000))
