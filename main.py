@@ -131,6 +131,13 @@ def habitica_sync():
 
     obsidian = data.get("obsidian")
     habitica_tasks = data.get("habitica")
+    
+    if isinstance(obsidian, list):
+        _ = {}
+        for item in obsidian:
+            _ = {**_, **item}
+        obsidian = _
+    
 
     if obsidian is None or habitica_tasks is None:
         return jsonify({"error": "Missing 'obsidian' or 'habitica' fields"}), 400
