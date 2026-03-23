@@ -27,7 +27,19 @@ def parse_date_from_line(line: str) -> Optional[str]:
 
 def parse_tags_from_line(line: str) -> List[str]:
     """Extrai tags no formato #tag."""
-    return re.findall(r"#([\w-]+)", line)
+    # Obsidian não aceita espaço em tag; internamente usamos espaço para manter
+    # compatibilidade com tags do Habitica (ex.: "Check HP").
+    return [tag.replace("-", " ") for tag in re.findall(r"#([\w-]+)", line)]
+
+
+def normalize_tags_for_compare(tags: List[str]) -> List[str]:
+    """Normaliza tags para comparação estável entre Obsidian e Habitica."""
+    normalized = []
+    for tag in tags:
+        clean_tag = re.sub(r"\s+", " ", str(tag).replace("-", " ")).strip()
+        if clean_tag:
+            normalized.append(clean_tag)
+    return sorted(normalized)
 
 
 def parse_completed_from_line(line: str) -> bool:
@@ -165,7 +177,8 @@ def tasks_are_identical(t1: Dict[str, Any], t2: Dict[str, Any]) -> bool:
         t1["body"] == t2["body"] and
         t1.get("date") == t2.get("date") and
         t1.get("priority") == t2.get("priority") and
-        t1.get("completed") == t2.get("completed")
+        t1.get("completed") == t2.get("completed") and
+        normalize_tags_for_compare(t1.get("tags", [])) == normalize_tags_for_compare(t2.get("tags", []))
     )
 
 
@@ -216,7 +229,8 @@ def format_task_for_obsidian(task: Dict[str, Any]) -> str:
 
     # Tags
     if task.get("tags"):
-        parts.append(" ".join(f"#{tag}" for tag in task["tags"]))
+        # Para Obsidian, converter espaços para "-" no momento da escrita.
+        parts.append(" ".join(f"#{str(tag).strip().replace(' ', '-')}" for tag in task["tags"] if str(tag).strip()))
 
     # Date
     if task.get("date"):
