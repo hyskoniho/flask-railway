@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Árvore Genealógica | Família</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary-gradient: linear-gradient(135deg, #0b3b24 0%, #175235 50%, #2e7a54 100%);
+      --secondary-gradient: linear-gradient(135deg, #ffd700 0%, #d4af37 100%);
+      --glass-bg: rgba(255, 255, 255, 0.05);
+      --glass-border: rgba(255, 255, 255, 0.15);
+      --panel-bg: rgba(11, 59, 36, 0.85);
+      --text-primary: #ffffff;
+      --text-secondary: #cce0d6;
+      --accent-gold: #d4af37;
+      --accent-green: #2e7a54;
+      --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      background: var(--primary-gradient);
+      color: var(--text-primary);
+      overflow: hidden;
+    }
+
+    /* Background Animation */
+    .leaves {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .leaf {
+      position: absolute;
+      top: -10vh;
+      width: 20px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 0 50% 50% 50%;
+      transform: rotate(45deg);
+      animation: fall linear infinite;
+    }
+
+    .leaf:nth-child(1) { left: 10%; animation-duration: 15s; animation-delay: 0s; }
+    .leaf:nth-child(2) { left: 30%; animation-duration: 20s; animation-delay: 2s; width: 30px; height: 30px; }
+    .leaf:nth-child(3) { left: 50%; animation-duration: 18s; animation-delay: 5s; }
+    .leaf:nth-child(4) { left: 70%; animation-duration: 22s; animation-delay: 1s; width: 15px; height: 15px; }
+    .leaf:nth-child(5) { left: 90%; animation-duration: 16s; animation-delay: 8s; }
+
+    @keyframes fall {
+      to {
+        transform: translateY(110vh) rotate(360deg);
+      }
+    }
+
+    /* Header */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+      background: linear-gradient(to bottom, rgba(11, 59, 36, 0.9), transparent);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .logo-icon {
+      font-size: 2rem;
+      animation: gentle-sway 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes gentle-sway {
+      from { transform: rotate(-10deg); }
+      to { transform: rotate(10deg); }
+    }
+
+    .logo h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      background: var(--secondary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .actions button {
+      background: var(--secondary-gradient);
+      color: #0b3b24;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 50px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    .actions button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
+    }
+
+    .actions button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Network Container */
+    #network {
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 5;
+    }
+
+    /* Side Panel */
+    .side-panel {
+      position: fixed;
+      top: 0;
+      right: -400px;
+      width: 400px;
+      height: 100vh;
+      background: var(--panel-bg);
+      backdrop-filter: blur(15px);
+      border-left: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-soft);
+      z-index: 20;
+      transition: right 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .side-panel.open {
+      right: 0;
+    }
+
+    .panel-header {
+      padding: 30px;
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-header h2 {
+      font-size: 1.5rem;
+      color: var(--accent-gold);
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: color 0.3s;
+    }
+
+    .close-btn:hover {
+      color: white;
+    }
+
+    .panel-content {
+      padding: 30px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 12px 15px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: white;
+      font-family: inherit;
+      font-size: 1rem;
+      transition: border-color 0.3s;
+    }
+
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: var(--accent-gold);
+    }
+
+    .form-group input[type="checkbox"] {
+      width: auto;
+      margin-right: 10px;
+    }
+    
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+
+    .panel-footer {
+      padding: 20px 30px;
+      border-top: 1px solid var(--glass-border);
+    }
+
+    .btn-save-node {
+      width: 100%;
+      background: var(--accent-green);
+      color: white;
+      border: 1px solid var(--glass-border);
+      padding: 12px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .btn-save-node:hover {
+      background: #399164;
+    }
+
+    /* Loading Overlay */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--primary-gradient);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: opacity 0.5s;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255, 215, 0, 0.2);
+      border-top-color: var(--accent-gold);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--panel-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+      color: white;
+      padding: 15px 30px;
+      border-radius: 50px;
+      box-shadow: var(--shadow-soft);
+      font-weight: 500;
+      z-index: 1000;
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .toast.error {
+      border-left: 4px solid #ff4757;
+    }
+
+    .toast.success {
+      border-left: 4px solid var(--accent-gold);
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Background Leaves -->
+  <div class="leaves">
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+  </div>
+
+  <!-- Loading Screen -->
+  <div class="loading-overlay" id="loading">
+    <div class="spinner"></div>
+    <h2 style="color: var(--accent-gold);">Carregando Árvore...</h2>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <span class="logo-icon">🌳</span>
+      <h1>Árvore Genealógica</h1>
+    </div>
+    <div class="actions">
+      <button id="btnSaveCloud" onclick="saveToCloud()">Salvar na Nuvem</button>
+    </div>
+  </header>
+
+  <!-- Vis.js Network Container -->
+  <div id="network"></div>
+
+  <!-- Side Panel for Editing -->
+  <div class="side-panel" id="sidePanel">
+    <div class="panel-header">
+      <h2>Editar Membro</h2>
+      <button class="close-btn" onclick="closePanel()">×</button>
+    </div>
+    <div class="panel-content">
+      <form id="editForm">
+        <input type="hidden" id="nodeId">
+        
+        <div class="form-group">
+          <label for="nodeName">Nome Completo</label>
+          <input type="text" id="nodeName" required>
+        </div>
+
+        <div class="form-group">
+          <label for="nodeBirth">Nascimento</label>
+          <input type="date" id="nodeBirth">
+        </div>
+
+        <div class="form-group">
+          <label for="nodeDeath">Falecimento</label>
+          <input type="date" id="nodeDeath">
+        </div>
+
+        <div class="form-group">
+          <label for="nodeCivil">Estado Civil</label>
+          <select id="nodeCivil">
+            <option value="solteiro">Solteiro(a)</option>
+            <option value="solteira">Solteira(o)</option>
+            <option value="casado">Casado(a)</option>
+            <option value="casada">Casada(o)</option>
+            <option value="divorciado">Divorciado(a)</option>
+            <option value="divorciada">Divorciada(o)</option>
+            <option value="viúvo">Viúvo(a)</option>
+            <option value="viúva">Viúva(o)</option>
+            <option value="desconhecido">Desconhecido</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="nodeAlive">
+            Está vivo?
+          </label>
+        </div>
+      </form>
+    </div>
+    <div class="panel-footer">
+      <button class="btn-save-node" onclick="saveNodeEdit()">Atualizar Nó</button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let network = null;
+    let nodesDataset = null;
+    let edgesDataset = null;
+    let fullTreeData = null; // Holds the original JSON
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchTreeData();
+    });
+
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast ${type} show`;
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    async function fetchTreeData() {
+      try {
+        const response = await fetch('/api/arvore');
+        if (!response.ok) throw new Error('Falha ao buscar dados');
+        fullTreeData = await response.json();
+        
+        buildNetwork(fullTreeData.pessoas);
+        
+        // Hide loading
+        setTimeout(() => {
+          document.getElementById('loading').style.opacity = '0';
+          setTimeout(() => document.getElementById('loading').style.display = 'none', 500);
+        }, 500);
+
+      } catch (error) {
+        console.error(error);
+        showToast('Erro ao carregar a árvore', 'error');
+      }
+    }
+
+    function buildNetwork(pessoas) {
+      const nodes = [];
+      const edges = [];
+
+      pessoas.forEach(p => {
+        // Build Node
+        nodes.push({
+          id: p.id,
+          label: formatLabel(p.nome_completo),
+          title: `<strong>${p.nome_completo}</strong><br>Rel.: ${p.parentesco_referencia || 'N/A'}<br>Status: ${p.vivo === true ? 'Vivo' : p.vivo === false ? 'Falecido' : 'Desconhecido'}`,
+          shape: 'box',
+          color: {
+            background: p.id === 'caio_01' ? '#d4af37' : 'rgba(255, 255, 255, 0.1)',
+            border: p.id === 'caio_01' ? '#fff' : '#d4af37',
+            highlight: { background: '#2e7a54', border: '#d4af37' }
+          },
+          font: {
+            color: p.id === 'caio_01' ? '#0b3b24' : '#fff',
+            face: 'Outfit',
+            size: 16
+          },
+          borderWidth: 2,
+          shadow: true
+        });
+
+        // Build Edges (Parents)
+        if (p.pais && p.pais.length > 0) {
+          p.pais.forEach(pai_id => {
+            edges.push({
+              from: pai_id,
+              to: p.id,
+              arrows: 'to',
+              color: { color: '#cce0d6', opacity: 0.6 },
+              smooth: { type: 'cubicBezier', forceDirection: 'vertical' }
+            });
+          });
+        }
+
+        // Build Edges (Relationships / Marriages)
+        if (p.relacionamentos && p.relacionamentos.length > 0) {
+          p.relacionamentos.forEach(rel => {
+            // Avoid duplicate edges (A->B and B->A)
+            const edgeId = [p.id, rel.com_id].sort().join('-');
+            if (!edges.some(e => e.id === edgeId)) {
+              let edgeColor = '#d4af37';
+              if (rel.tipo.includes('ex') || rel.tipo.includes('divorciad')) {
+                edgeColor = '#ff4757';
+              }
+              edges.push({
+                id: edgeId,
+                from: p.id,
+                to: rel.com_id,
+                dashes: rel.tipo.includes('ex') || rel.tipo.includes('divorciad'),
+                color: { color: edgeColor, opacity: 0.8 },
+                title: rel.tipo,
+                smooth: { type: 'curvedCW', roundness: 0.2 }
+              });
+            }
+          });
+        }
+      });
+
+      nodesDataset = new vis.DataSet(nodes);
+      edgesDataset = new vis.DataSet(edges);
+
+      const container = document.getElementById('network');
+      const data = { nodes: nodesDataset, edges: edgesDataset };
+      
+      const options = {
+        layout: {
+          hierarchical: {
+            enabled: true,
+            direction: 'UD',
+            sortMethod: 'directed',
+            levelSeparation: 150,
+            nodeSpacing: 250
+          }
+        },
+        physics: {
+          enabled: false // Disable physics for hierarchical to keep it stable
+        },
+        interaction: {
+          hover: true,
+          tooltipDelay: 200
+        }
+      };
+
+      network = new vis.Network(container, data, options);
+
+      // Node click event
+      network.on("selectNode", function (params) {
+        if (params.nodes.length > 0) {
+          const nodeId = params.nodes[0];
+          openPanel(nodeId);
+        }
+      });
+      
+      network.on("deselectNode", function () {
+        closePanel();
+      });
+    }
+
+    function formatLabel(name) {
+      if (!name) return "Desconhecido";
+      const parts = name.split(' ');
+      if (parts.length > 2) {
+        return `${parts[0]}\n${parts[parts.length - 1]}`;
+      }
+      return name.replace(' ', '\n');
+    }
+
+    function openPanel(nodeId) {
+      const pessoa = fullTreeData.pessoas.find(p => p.id === nodeId);
+      if (!pessoa) return;
+
+      document.getElementById('nodeId').value = pessoa.id;
+      document.getElementById('nodeName').value = pessoa.nome_completo || '';
+      document.getElementById('nodeBirth').value = pessoa.nascimento || '';
+      document.getElementById('nodeDeath').value = pessoa.falecimento || '';
+      
+      const selectCivil = document.getElementById('nodeCivil');
+      if (pessoa.estado_civil) {
+        let matched = false;
+        for (let i = 0; i < selectCivil.options.length; i++) {
+          if (selectCivil.options[i].value === pessoa.estado_civil.toLowerCase()) {
+            selectCivil.selectedIndex = i;
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) selectCivil.value = 'desconhecido';
+      } else {
+        selectCivil.value = 'desconhecido';
+      }
+
+      document.getElementById('nodeAlive').checked = pessoa.vivo === true;
+
+      document.getElementById('sidePanel').classList.add('open');
+    }
+
+    function closePanel() {
+      document.getElementById('sidePanel').classList.remove('open');
+      if (network) {
+        network.unselectAll();
+      }
+    }
+
+    function saveNodeEdit() {
+      const id = document.getElementById('nodeId').value;
+      const pessoaIndex = fullTreeData.pessoas.findIndex(p => p.id === id);
+      if (pessoaIndex === -1) return;
+
+      // Update in-memory data
+      fullTreeData.pessoas[pessoaIndex].nome_completo = document.getElementById('nodeName').value;
+      fullTreeData.pessoas[pessoaIndex].nascimento = document.getElementById('nodeBirth').value || null;
+      fullTreeData.pessoas[pessoaIndex].falecimento = document.getElementById('nodeDeath').value || null;
+      fullTreeData.pessoas[pessoaIndex].estado_civil = document.getElementById('nodeCivil').value;
+      fullTreeData.pessoas[pessoaIndex].vivo = document.getElementById('nodeAlive').checked;
+
+      // Update node visually
+      const updatedPessoa = fullTreeData.pessoas[pessoaIndex];
+      nodesDataset.update({
+        id: id,
+        label: formatLabel(updatedPessoa.nome_completo),
+        title: `<strong>${updatedPessoa.nome_completo}</strong><br>Rel.: ${updatedPessoa.parentesco_referencia || 'N/A'}<br>Status: ${updatedPessoa.vivo === true ? 'Vivo' : updatedPessoa.vivo === false ? 'Falecido' : 'Desconhecido'}`
+      });
+
+      closePanel();
+      showToast('Membro atualizado localmente. Lembre-se de salvar na nuvem!');
+      
+      // Highlight save button
+      document.getElementById('btnSaveCloud').style.boxShadow = '0 0 20px #ff4757';
+      document.getElementById('btnSaveCloud').style.transform = 'scale(1.05)';
+      setTimeout(() => {
+        document.getElementById('btnSaveCloud').style.transform = 'scale(1)';
+      }, 300);
+    }
+
+    async function saveToCloud() {
+      const btn = document.getElementById('btnSaveCloud');
+      btn.disabled = true;
+      btn.textContent = 'Salvando...';
+
+      try {
+        const response = await fetch('/api/arvore', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(fullTreeData)
+        });
+
+        if (!response.ok) throw new Error('Falha ao salvar na API');
+        
+        showToast('Árvore salva na nuvem com sucesso!', 'success');
+        btn.style.boxShadow = '0 4px 15px rgba(212, 175, 55, 0.3)'; // Reset highlight
+      } catch (error) {
+        console.error(error);
+        showToast('Erro ao salvar as alterações', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Salvar na Nuvem';
+      }
+    }
+  </script>
+</body>
+</html>

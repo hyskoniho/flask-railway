@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request, render_template
-from library import clob, psoffice, moodle, habitica
+from library import clob, psoffice, moodle, habitica, arvore_genealogica
 import os, requests, sys, traceback
 
 app = Flask(__name__)
@@ -147,6 +147,33 @@ def habitica_sync():
         return jsonify({"error": "Failed to sync tasks", "details": ''.join(traceback.format_exception(*sys.exc_info())) + '\n' + str(e)}), 500
 
     return jsonify(result)
+
+@app.route('/arvore-genealogica', methods=['GET'])
+def arvore_genealogica_page():
+    return render_template('arvore_genalogica.html')
+
+@app.route('/api/arvore', methods=['GET', 'POST'])
+def arvore_api():
+    if request.method == 'GET':
+        try:
+            data = arvore_genealogica.get_tree()
+            return jsonify(data)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    
+    if request.method == 'POST':
+        if not request.is_json:
+            return jsonify({"error": "Request must be application/json"}), 400
+        data = request.get_json(silent=True)
+        if not data:
+            return jsonify({"error": "Invalid or missing JSON body"}), 400
+        
+        try:
+            result = arvore_genealogica.update_tree(data)
+            return jsonify(result)
+        except Exception as e:
+            import traceback, sys
+            return jsonify({"error": "Failed to update tree", "details": ''.join(traceback.format_exception(*sys.exc_info())) + '\n' + str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=os.getenv("PORT", default=5000))
